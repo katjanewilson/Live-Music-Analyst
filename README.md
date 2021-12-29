@@ -1,4 +1,4 @@
-## Live Music Analyst
+# Live Music Analyst
 Commissioned data journalism article with [The Pudding](https://pudding.cool/) 
 
 ## Project Page
