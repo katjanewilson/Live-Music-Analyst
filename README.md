@@ -66,6 +66,5 @@ Music is in our hearts, and we will be the first ones back at the venues when th
 * [Data Visualization](https://d3js.org/)
 * [Data Cleaning](https://cran.r-project.org/web/packages/tidyverse/index.html)
 
-* [PSWeight](https://cran.r-project.org/web/packages/PSweight/PSweight.pdf)
-* [NYC Open Data](https://opendata.cityofnewyork.us/)
+
 
