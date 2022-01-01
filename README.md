@@ -5,9 +5,9 @@ Commissioned data journalism article with [The Pudding](https://pudding.cool/)
 
 [Live Music Analyst](https://pudding.cool/2021/02/jukebox/) 
 
-## Overview
+## Methods Overview
 
-An estimated 10,000 artists have recorded live albums in recording history. Our list of artists comes from Wikipedia’s list of live recorded albums, compared to the set of Pop/Rock artists who recorded at least one live recorded album by 9/16/2020, as they appear on AllMusic. We pulled the intersected list of artist names (about 10,950) from the Spotify API, and ended up with around 8,000 artists’ Spotify API data. We culled this list of artists by selecting only artists who had charted on the Billboard Hot 100.
+An estimated 10,000 artists have recorded live albums in recording history. Our list of artists for this project comes from Wikipedia’s list of live recorded albums, compared to the set of Pop/Rock artists who recorded at least one live recorded album by 9/16/2020, as they appear on AllMusic. We pulled the intersected list of artist names (about 10,950) from the Spotify API, and ended up with around 8,000 artists’ Spotify API data. We culled this list of artists by selecting only artists who had charted on the Billboard Hot 100.
 
 Raw SpotifyAPI data includes song level variables such as acoustics, speech levels, and duration of a song, and album level variables such as album name and year recorded. We hard coded a binary indicator of live/studio by identifying tracks with the string “Live” or “Sessions” in the track name or in the album name. We removed tracks with “Commentary”, “Rehearsals”, “Intro”, “Movie Soundtrack”, or “Demos” from the analysis, and only kept artists who had at least 7 recorded live songs, per the previously created variable, as an indicator that live songs are representative of a live album recording, rather than a one off recording.
 
