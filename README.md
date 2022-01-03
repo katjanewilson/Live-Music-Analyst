@@ -57,9 +57,6 @@ top_livealbum_liveness <- data_wide_liveness %>%
 
 ```
 
-
-Music is in our hearts, and we will be the first ones back at the venues when they open up again. In the meantime, you can support live music during covid by getting your live performance ready for when the stage opens back, or find other ways to support live musicians.
-
 ### Citations
 
 * [Spotify API](https://developer.spotify.com/documentation/web-api/libraries/)
