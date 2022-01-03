@@ -14,46 +14,130 @@ Raw SpotifyAPI data includes song level variables such as acoustics, speech leve
 Using the new binary indicator of live/studio, we matched tracks by track name and artist name. This yielded multiple matches for a single song. For instance, seven live recordings of “Folsom Prison Blues” exist in the data set, and four studio recordings (Mercury Albums, Total Johnny Cash Sun Collection, All About the Blue Train, and I Walk the Line), giving us 28 possible matches to compare among Live to Studio. To cull the data for the project, we scraped the “popularity index” from our original artist list, and kept only the tracks with the highest popularity index. Using this new, parsed down, matched list of live and studio versions, we calculated the difference of audio features (acoustics, duration, instrumentals) from the live to studio version for each track.
 
 ``` r
-# data import
-theroots <- get_artist_audio_features('the roots')
-pac <- get_artist_audio_features('2pac')
-run_dmc <- get_artist_audio_features('run dmc')
-sublime <- get_artist_audio_features('sublime')
-daftpunk <- get_artist_audio_features('daft punk')
-yes <- get_artist_audio_features('yes')
+### function 1: cleans the live frames
 
-# live tracks
-grouped <- small_total %>%
-  mutate(livemarker = case_when(
-    str_detect(track_name, "- Live") |
-      str_detect(track_name, "(Live)") |
-      str_detect(album_name, "Live") ~ "live"
-  ))
-grouped$livemarker[is.na(grouped$livemarker)] <- "studio"
-grouped <- grouped %>%
-  select(livemarker, track_name, artist_name, album_name, danceability, energy, tempo, liveness, valence,
-         speechiness, acousticness, instrumentalness) %>%
-  group_by(artist_name, livemarker) %>%
-  mutate(n = n()) %>%
-  filter(n > 6)
+clean_live_frame_function <- function(livedata, albumname)  {
+  artist_live_edits <- livedata %>%
+    mutate(livemarker = ifelse(livedata$album_name == albumname, 1, 0))
+  artist_live_edits2 <- artist_live_edits %>%
+    mutate(omitvariable = case_when(
+      (str_detect(album_name, "Sessions") |
+         str_detect(album_name, "Live") |
+         str_detect(album_name, "Festival") |
+         str_detect(album_name, "Concerts"))& livemarker == 0 ~ "omit"))
+  artist_live_edits2 <- artist_live_edits2 %>%
+    mutate(track_name = gsub("\\-.*","", track_name))
+  artist_live_edits2 <- artist_live_edits2 %>%
+    mutate(omitvariable2 = case_when(
+      (str_detect(track_name, "Live") & livemarker == 0 ~"omit")
+    ))
+  artist_live_edits2 <- artist_live_edits2 %>%
+    filter(is.na(omitvariable) & is.na(omitvariable2))
+  artist_live_edits2 <- artist_live_edits2 %>%
+    distinct()
+}
 
-# auditory features
-grouped$liveness <- as.numeric(grouped$liveness)
-grouped_liveness <- grouped %>%
-  group_by(artist_name, livemarker) %>%
-  summarise(mean_liveness = mean(liveness))
-data_wide <- spread(grouped_liveness, livemarker, mean_liveness)
-#remove any rows that have an NA
-data_wide <- na.omit(data_wide)
-#calculate difference
-data_wide_liveness <- data_wide   %>%
-  select(artist_name, studio, live) %>%
-  mutate(difference_liveness = (studio-live),
-         difference_liveness_abs = abs(studio-live),
-         polarity = ifelse(difference_liveness <0, "livealbum", "studioalbum"))
-top_livealbum_liveness <- data_wide_liveness %>%
-  filter(polarity == "livealbum") %>%
-  arrange(desc(difference_liveness_abs))
+
+mymorningjacket_livedata <- accumulatedlive %>%
+  filter(artist_name == "My Morning Jacket")
+mymorning_clean <- clean_live_frame_function(mymorningjacket_livedata, "Okonokos")
+
+### function2: slope graph creator
+
+slope_graph_creater <- function(clean_live_frame, song) {
+  
+  song_string<- as.character(song)
+  song_string <- substr(song_string, 1,5)
+  
+  jimi_hendrix_live_slope_try <- clean_live_frame %>%
+    filter(str_detect(track_name, song_string))
+  
+  jimi_hendrix_live_slope_try <- jimi_hendrix_live_slope_try %>%
+    select(livemarker, liveness, danceability, acousticness,
+           energy, valence, livemarker)
+  jimi_hendrix_live_slope_try$Liveness <- as.numeric(jimi_hendrix_live_slope_try$liveness)
+  jimi_hendrix_live_slope_try$Danceability <- as.numeric(jimi_hendrix_live_slope_try$danceability)
+  jimi_hendrix_live_slope_try$Acoustics <- as.numeric(jimi_hendrix_live_slope_try$acousticness)
+  jimi_hendrix_live_slope_try$Energy <- as.numeric(jimi_hendrix_live_slope_try$energy)
+  jimi_hendrix_live_slope_try$Valence <- as.numeric(jimi_hendrix_live_slope_try$valence)
+  jimi_hendrix_live_slope_try$livemarker<- as.factor(jimi_hendrix_live_slope_try$livemarker)
+  jimi_hendrix_live_slope_try2 <- jimi_hendrix_live_slope_try %>%
+    group_by(livemarker) %>%
+    summarise(Acoustics = mean(Acoustics),
+              Danceability = mean(Danceability),
+              Energy = mean(Energy),
+              Valence = mean(Valence),
+              Liveness = mean(Liveness))
+  #install.packages("scales")
+  library(ggplot2)
+  jimi2 <- jimi_hendrix_live_slope_try %>%
+    select(livemarker, Liveness, Danceability, Energy, Valence, Acoustics) %>%
+    group_by(livemarker) %>%
+    mutate(Liveness = mean(Liveness),
+           Danceability = mean(Danceability),
+           Acoustics = mean(Acoustics),
+           Valence = mean(Valence),
+           Energy = mean(Energy))%>%
+    select(livemarker, Liveness, Danceability, Acoustics, Valence, Energy) %>%
+    group_by(livemarker, Liveness, Danceability, Acoustics, Valence, Energy) %>%
+    summarise()
+  jimi2 <- gather(jimi2, condition, measurement, Liveness, Danceability, Acoustics, Valence, Energy) %>%
+    arrange(livemarker, condition)
+  jimi2$livemarker <- as.factor(jimi2$livemarker)
+  jimi2$condition <- as.factor(jimi2$condition)
+  jimi2$livemarker <- ifelse(jimi2$livemarker == 1, "Live", " Studio")
+  return(ggplot(data = jimi2, aes(x = livemarker, y = measurement, group = condition)) +
+           geom_line(aes(color = condition), size = 1, alpha = .5) +
+           geom_point(aes(color = condition), size = 2) +
+           #  Labelling as desired
+           labs(
+             title = song
+           ) +
+           ylab(element_blank())+
+           xlab(element_blank()) +
+           theme(legend.title = element_blank(),
+                 panel.grid.major = element_blank(),
+                 panel.grid.minor = element_blank(),
+                 panel.background = element_blank(),
+                 axis.text.x = element_text(size =10),
+                 title = element_text(size = 9)) +
+           theme(plot.title = element_text(hjust=0.5))+
+           scale_color_viridis_d()
+  ) 
+  
+}
+
+## loop that puts the slopes into a list
+
+function_slope_for_each_song <- function(artist_live_data, album) {
+  fz_clean <- clean_live_frame_function(artist_live_data, album)
+  fz_clean_live <- fz_clean %>%
+    filter(livemarker == 1)
+  vector <- unique(fz_clean_live$track_name)
+  vector
+  song<- as.character(vector)
+  song_string <- substr(song, 1,5)
+  len<- length(song_string)
+  len
+  x <- list(1:len)
+  a <- vector("list", 1)
+  for (i in c(1:len)) {
+    a[[i]] <- slope_graph_creater(fz_clean, vector[i])
+    # assign(paste("quotient", i, sep = ""), a)
+  }
+  len <- length(a)
+  plot <- grid.arrange(a[[1]], a[[2]] + theme(legend.position = "none", axis.text.y =  element_blank(), axis.ticks.y = element_blank()),
+                       a[[3]] + theme(legend.position = "none", axis.text.y =  element_blank(), axis.ticks.y = element_blank()), a[[4]] + theme(legend.position = "none", axis.text.y =  element_blank(), axis.ticks.y = element_blank()),
+                       a[[5]] + theme(legend.position = "none", axis.text.y =  element_blank(), axis.ticks.y = element_blank()), a[[6]] + theme(legend.position = "none", axis.text.y =  element_blank(), axis.ticks.y = element_blank()),
+                       nrow =3, ncol = 2, top = textGrob(album, gp= gpar(fontsize = 20, font = 2)))
+}
+
+library(gridExtra)
+library(grid)
+
+frankzappa_livedata <- accumulatedlive %>%
+  filter(artist_name == "Frank Zappa")
+frankzappa_liveplots <- function_slope_for_each_song(frankzappa_livedata, "Roxy & Elsewhere")
 
 ```
 
